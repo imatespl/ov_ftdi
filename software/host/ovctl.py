@@ -150,82 +150,6 @@ class OutputCustom:
         self.output.write(bytes(self.template % (pkthex, self.speed.upper(), ts / 60e6), "ascii"))
 
 
-class OutputITI1480A:
-    def __init__(self, output, speed):
-        self.output = output
-        self.speed = speed
-        self.ts_offset = 0
-        self.ts_last = None
-
-    def handle_usb(self, ts, pkt, flags, orig_len):
-        buf = []
-
-        # Skip SOF and empty packets
-        if (len(pkt) == 0) or (pkt[0] == 0xa5):
-            return
-
-        # Get delta vs prev packet
-        if self.ts_last is None:
-            self.ts_last = ts
-
-        ts_delta = ts - self.ts_last
-
-        self.ts_last = ts
-
-        # Prepare data
-        buf = bytearray(4 + 2 + 2*len(pkt) + 2)
-
-        # Write timestamp delta
-        buf[0] = (ts_delta & 0x0000ff0) >> 4
-        buf[1] = (ts_delta & 0x000000f) | 0x30
-        buf[2] = (ts_delta & 0xff00000) >> 20
-        buf[3] = (ts_delta & 0x00ff000) >> 12
-
-        # Write packet start
-        buf[4] = 0x40
-        buf[5] = 0xc0
-
-        # Write packet data
-        buf[6:-2:2] = pkt
-        buf[7:-2:2] = b'\x80' * len(pkt)
-
-        # Write packet end
-        buf[-2] = 0x00
-        buf[-1] = 0xc0
-
-        # To file
-        self.output.write(buf)
-
-
-class OutputPcap:
-    LINKTYPE_USB_2_0 = 288
-
-    def __init__(self, output):
-        self.output = output
-        self.output.write(struct.pack("IHHIIII", 0xa1b23c4d, 2, 4, 0, 0, 65535, self.LINKTYPE_USB_2_0))
-        # Assume that capture started at the same time this object was created. This is not a proper time
-        # synchronization but should be good enough. Record time is advanced based on the FPGA clock.
-        self.utc_ts = int(time.time())
-        self.last_ts = 0
-        self.ts_offset = 0
-
-    def handle_usb(self, ts, pkt, flags, orig_len):
-        # Increment timestamp based on the 60 MHz 24-bit counter value.
-        # Convert remaining clocks to nanoseconds: 1 clk = 1 / 60 MHz = 16.(6) ns
-        diff_ts = ts - self.last_ts
-        self.last_ts = ts
-        seconds, clks = divmod(self.ts_offset + diff_ts, 60e6)
-        self.utc_ts = int(self.utc_ts + seconds) & 0xffffffff
-        self.ts_offset = clks
-        nanosec = int((clks * 17) - (clks // 3))
-        if len(pkt) == 0:
-            return
-        # Write pcap record header in host endian
-        self.output.write(struct.pack("IIII", self.utc_ts, nanosec, len(pkt), orig_len))
-        # Write USB packet, beginning with a PID as it appeared on the bus
-        self.output.write(pkt)
-
-
 def do_sdramtests(dev, cb=None, tests = range(0, 6)):
 
     for i in tests:
@@ -258,7 +182,7 @@ def sdramtest(dev):
     dev.regs.LEDS_MUX_0.wr(0)
 
 sniff_speeds = ["hs", "fs", "ls"]
-sniff_formats = ["verbose", "custom", "pcap", "iti1480a"]
+sniff_formats = ["verbose", "custom"]
 
 def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_sof):
     # LEDs off
@@ -311,11 +235,6 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
 
     if format == "custom":
         output_handler = OutputCustom(out or sys.stdout, speed)
-    elif format == "pcap":
-        assert out, "can't output pcap to stdout, use --out"
-        output_handler = OutputPcap(out)
-    elif format == "iti1480a":
-        output_handler = OutputITI1480A(out, speed)
 
     if output_handler is not None:
       dev.rxcsniff.service.handlers = [output_handler.handle_usb]
