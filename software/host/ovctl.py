@@ -12,6 +12,9 @@ import zipfile
 import sys
 import os, os.path
 import struct
+
+import json
+import FileSave
 #import yappi
 
 # We check the Python version in __main__ so we don't
@@ -136,18 +139,38 @@ def report(dev):
 
 
 class OutputCustom:
-    def __init__(self, output, speed):
+    def __init__(self, output, speed, conf):
         self.output = output
         self.speed = speed
+        self.conf = conf
         try:
             with open("template_custom.txt") as f:
                 self.template = f.readline()
         except:
             self.template = "data=%s speed=%s time=%f\n"
+    
+    def data_filter(self, pkt):
+        if self.conf['filter_save_enable'] == 'true':
+            for rule in self.conf['file_save_rules']:
+                value = bytes.fromhex(rule['value'])
+                is_equal = rule['is_equal']
+                #配置里面写的是十六进制偏移，转为bytes需要除2
+                data_offset = int(rule['data_offset']) / 2
+                if is_equal == 'true':
+                    if value == pkt[data_offset:len(value)]:
+                        return True
+                elif is_equal == 'false':
+                    if value != pkt[data_offset:len(value)]:
+                        return True
+        elif self.conf['filter_save_enable'] == 'false':
+            return True
+        
+        return False
 
     def handle_usb(self, ts, pkt, flags, orig_len):
         pkthex = " ".join("%02x" % x for x in pkt)
-        self.output.write(bytes(self.template % (pkthex, self.speed.upper(), ts / 60e6), "ascii"))
+        if self.data_filter:
+            self.output.write(bytes(self.template % (pkthex, self.speed.upper(), ts / 60e6), "ascii"))
 
 
 def do_sdramtests(dev, cb=None, tests = range(0, 6)):
@@ -184,7 +207,7 @@ def sdramtest(dev):
 sniff_speeds = ["hs", "fs", "ls"]
 sniff_formats = ["verbose", "custom"]
 
-def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_sof):
+def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_sof, conf):
     # LEDs off
     dev.regs.LEDS_MUX_2.wr(0)
     dev.regs.LEDS_OUT.wr(0)
@@ -231,10 +254,11 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
     assert format in sniff_formats
 
     output_handler = None
-    out = out and open(out, "wb")
+    #默认开启按文件大小和时间滚动保存
+    out = FileSave(out, conf['max_file_size'], conf['rotation_file_interval'])
 
     if format == "custom":
-        output_handler = OutputCustom(out or sys.stdout, speed)
+        output_handler = OutputCustom(out or sys.stdout, speed, conf)
 
     if output_handler is not None:
       dev.rxcsniff.service.handlers = [output_handler.handle_usb]
@@ -337,9 +361,9 @@ class Sniff(Command):
                         help='Report filtered packets instead of discarding')
 
     @staticmethod
-    def go(dev, args):
+    def go(dev, args, conf):
         do_sniff(dev, args.speed, args.format, args.out, args.timeout,
-                 args.debug_filter, args.filter_nak, args.filter_sof)
+                 args.debug_filter, args.filter_nak, args.filter_sof, conf)
 
 
 @command('debug-stream', 'Debug Stream')
@@ -497,6 +521,9 @@ def main():
         sp.set_defaults(hdlr=i)
 
     args = ap.parse_args()
+    
+    with open('usbbr.json', 'r') as config_file:
+        conf = json.load(config_file)
 
 
     dev = LibOV.OVDevice(mapfile=args.pkg.open('map.txt', 'r'), verbose=args.verbose)
@@ -539,7 +566,7 @@ def main():
 
     try:
         if hasattr(args, 'hdlr'):
-            args.hdlr.go(dev, args)
+            args.hdlr.go(dev, args, conf)
     finally:
         dev.close()
 
