@@ -169,6 +169,10 @@ class OutputCustom:
 
     def handle_usb(self, ts, pkt, flags, orig_len):
         pkthex = " ".join("%02x" % x for x in pkt)
+        #eject command
+        eject_command = bytes.fromhex('0003433330')
+        if eject_command:
+            self.output.need_rotation = True
         if self.data_filter:
             self.output.write(bytes(self.template % (pkthex, self.speed.upper(), ts / 60e6), "ascii"))
 
@@ -255,10 +259,10 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
 
     output_handler = None
     #默认开启按文件大小和时间滚动保存
-    out = FileSave(out, conf['max_file_size'], conf['rotation_file_interval'])
+    out = FileSave.FileHandler(out, conf['max_file_size'], conf['rotation_file_interval'])
 
     if format == "custom":
-        output_handler = OutputCustom(out or sys.stdout, speed, conf)
+        output_handler = OutputCustom(out, speed, conf)
 
     if output_handler is not None:
       dev.rxcsniff.service.handlers = [output_handler.handle_usb]

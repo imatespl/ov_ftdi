@@ -16,7 +16,7 @@ class FileHandler:
         self.max_file_size = max_file_size * 1024
         self.rotation_file_interval = rotation_file_interval * 60
         self.open_file_time = None
-        # 发出reject命令后，需要重新保存文件
+        # 发出eject命令后，需要重新保存文件
         self.need_rotation = False
         self.open_new_file()
 
