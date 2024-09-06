@@ -13,8 +13,8 @@ class FileHandler:
         self.current_file_index = self.load_sequence()
         self.current_file = None
         self.file_name = file_name
-        self.max_file_size = max_file_size * 1024
-        self.rotation_file_interval = rotation_file_interval * 60
+        self.max_file_size = max_file_size * 1024 * 1024 # MB
+        self.rotation_file_interval = rotation_file_interval * 60 # SECONDS
         self.open_file_time = None
         # 发出eject命令后，需要重新保存文件
         self.need_rotation = False
@@ -59,7 +59,7 @@ class FileHandler:
         self.open_new_file()
 
     def compress_file(self, file_index):
-        file_name = FILE_NAME_TEMPLATE.format(file_index)
+        file_name = str(self.current_file_index) + '_' + self.file_name
         zip_name = f"{file_name}.zip"
         with pyzipper.AESZipFile(zip_name, 'w', compression=pyzipper.ZIP_STORED) as zipf:
             zipf.setpassword(ZIP_PASSWORD)

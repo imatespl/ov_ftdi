@@ -259,7 +259,7 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
 
     output_handler = None
     #默认开启按文件大小和时间滚动保存
-    out = FileSave.FileHandler(out, conf['max_file_size'], conf['rotation_file_interval'])
+    out = FileSave.FileHandler(out, int(conf['max_file_size']), int(conf['rotation_file_interval']))
 
     if format == "custom":
         output_handler = OutputCustom(out, speed, conf)
