@@ -174,7 +174,7 @@ class OutputCustom:
         eject_command = bytes.fromhex('0003433330')
         if eject_command in pkt:
             self.output.need_rotation = True
-        if self.data_filter:
+        if self.data_filter(pkt):
             try:
                 self.output.write(bytes(self.template % (pkthex, self.speed.upper(), ts / 60e6), "ascii"))
             except Exception as e:
@@ -272,7 +272,7 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
     out = FileSave.FileHandler(out, int(conf['max_file_size']), int(conf['rotation_file_interval']))
 
     signal.signal(signal.SIGINT, lambda s, f: signal_handler(s, f, out))
-    
+
     if format == "custom":
         output_handler = OutputCustom(out, speed, conf)
 
