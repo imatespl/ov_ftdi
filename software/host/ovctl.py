@@ -15,6 +15,7 @@ import struct
 
 import json
 import FileSave
+import signal
 #import yappi
 
 # We check the Python version in __main__ so we don't
@@ -171,10 +172,15 @@ class OutputCustom:
         pkthex = " ".join("%02x" % x for x in pkt)
         #eject command
         eject_command = bytes.fromhex('0003433330')
-        if eject_command:
+        if eject_command in pkt:
             self.output.need_rotation = True
         if self.data_filter:
-            self.output.write(bytes(self.template % (pkthex, self.speed.upper(), ts / 60e6), "ascii"))
+            try:
+                self.output.write(bytes(self.template % (pkthex, self.speed.upper(), ts / 60e6), "ascii"))
+            except Exception as e:
+                print(f"Execption: {e}")
+                self.output.close()
+
 
 
 def do_sdramtests(dev, cb=None, tests = range(0, 6)):
@@ -210,6 +216,10 @@ def sdramtest(dev):
 
 sniff_speeds = ["hs", "fs", "ls"]
 sniff_formats = ["verbose", "custom"]
+
+def signal_handler(signal, frame, handler):
+    handler.close()
+    sys.exit(0)
 
 def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_sof, conf):
     # LEDs off
@@ -261,6 +271,8 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
     #默认开启按文件大小和时间滚动保存
     out = FileSave.FileHandler(out, int(conf['max_file_size']), int(conf['rotation_file_interval']))
 
+    signal.signal(signal.SIGINT, lambda s, f: signal_handler(s, f, out))
+    
     if format == "custom":
         output_handler = OutputCustom(out, speed, conf)
 
