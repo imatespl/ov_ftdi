@@ -20,9 +20,9 @@ class FileHandler:
         self.need_rotation = False
         self.open_new_file()
 
-    def ensure_directory_exists(file_path):
+    def ensure_directory_exists(self):
         # 获取文件的上级目录路径
-        directory = os.path.dirname(file_path)
+        directory = os.path.dirname(self.file_name)
     
         # 如果目录不存在，则创建
         if not os.path.exists(directory):

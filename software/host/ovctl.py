@@ -152,7 +152,7 @@ class OutputCustom:
     
     def data_filter(self, pkt):
         if self.conf['filter_save_enable'] == 'true':
-            for rule in self.conf['file_save_rules']:
+            for rule in self.conf['filter_save_rules']:
                 value = bytes.fromhex(rule['value'])
                 is_equal = rule['is_equal']
                 #配置里面写的是十六进制偏移，转为bytes需要除2
