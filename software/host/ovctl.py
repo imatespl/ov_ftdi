@@ -156,7 +156,7 @@ class OutputCustom:
                 value = bytes.fromhex(rule['value'])
                 is_equal = rule['is_equal']
                 #配置里面写的是十六进制偏移，转为bytes需要除2
-                data_offset = int(rule['data_offset']) / 2
+                data_offset = int(int(rule['data_offset']) / 2)
                 if is_equal == 'true':
                     if value == pkt[data_offset:len(value)]:
                         return True
@@ -173,13 +173,15 @@ class OutputCustom:
         #eject command
         eject_command = bytes.fromhex('0003433330')
         if eject_command in pkt:
-            self.output.need_rotation = True
+            self.output.
         if self.data_filter(pkt):
             try:
                 self.output.write(bytes(self.template % (pkthex, self.speed.upper(), ts / 60e6), "ascii"))
             except Exception as e:
                 print(f"Execption: {e}")
                 self.output.close()
+        if eject_command in pkt:
+            self.output.handle_file_rotation()
 
 
 

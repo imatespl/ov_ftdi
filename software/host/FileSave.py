@@ -50,7 +50,7 @@ class FileHandler:
         self.need_rotation = False
 
     def close_current_file(self):
-        if self.current_file:
+        if self.current_file and self.current_file.tell() > 0:
             self.current_file.close()
 
     def write(self, data):
@@ -75,4 +75,5 @@ class FileHandler:
 
     def close(self):
         self.close_current_file()
+        threading.Thread(target=self.compress_file, args=(self.current_file_index,)).start()
         self.save_sequence()
