@@ -16,8 +16,6 @@ class FileHandler:
         self.max_file_size = max_file_size * 1024 * 1024 # MB
         self.rotation_file_interval = rotation_file_interval * 60 # SECONDS
         self.open_file_time = None
-        # 发出eject命令后，需要重新保存文件
-        self.need_rotation = False
         self.open_new_file()
 
     def ensure_directory_exists(self):
@@ -37,17 +35,17 @@ class FileHandler:
             return 0
 
     def save_sequence(self):
+        #保存的当前index+1
+        self.current_file_index += 1
         # 保存当前文件序列编号
         with open(SEQUENCE_FILE, 'w') as f:
             f.write(str(self.current_file_index))
 
     def open_new_file(self):
         self.ensure_directory_exists()
-        self.current_file_index += 1
-        self.save_sequence()
         self.current_file = open(self.file_name + '_' + str(self.current_file_index), 'wb')
+        self.save_sequence()
         self.open_file_time = datetime.now()
-        self.need_rotation = False
 
     def close_current_file(self):
         if self.current_file and self.current_file.tell() > 0:
@@ -57,8 +55,7 @@ class FileHandler:
         self.current_file.write(data)
         now = datetime.now()
         interval = (now - self.open_file_time).seconds
-        if (self.current_file.tell() >= self.max_file_size or interval >= self.rotation_file_interval
-            or self.need_rotation):
+        if (self.current_file.tell() >= self.max_file_size or interval >= self.rotation_file_interval):
             self.handle_file_rotation()
 
     def handle_file_rotation(self):

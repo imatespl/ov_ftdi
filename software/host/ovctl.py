@@ -138,6 +138,23 @@ def report(dev):
     if stat == -1:
         print("\t... all passed")
 
+def data_filter(conf, pkt):
+    if conf['filter_save_enable'] == 'true':
+        for rule in conf['filter_save_rules']:
+            value = bytes.fromhex(rule['value'])
+            is_equal = rule['is_equal']
+            #配置里面写的是十六进制偏移，转为bytes需要除2
+            data_offset = int(int(rule['data_offset']) / 2)
+            if is_equal == 'true':
+                if value == pkt[data_offset:len(value)]:
+                    return True
+            elif is_equal == 'false':
+                if value != pkt[data_offset:len(value)]:
+                    return True
+    elif conf['filter_save_enable'] == 'false':
+        return True
+    
+    return False
 
 class OutputCustom:
     def __init__(self, output, speed, conf):
@@ -150,31 +167,12 @@ class OutputCustom:
         except:
             self.template = "data=%s speed=%s time=%f\n"
     
-    def data_filter(self, pkt):
-        if self.conf['filter_save_enable'] == 'true':
-            for rule in self.conf['filter_save_rules']:
-                value = bytes.fromhex(rule['value'])
-                is_equal = rule['is_equal']
-                #配置里面写的是十六进制偏移，转为bytes需要除2
-                data_offset = int(int(rule['data_offset']) / 2)
-                if is_equal == 'true':
-                    if value == pkt[data_offset:len(value)]:
-                        return True
-                elif is_equal == 'false':
-                    if value != pkt[data_offset:len(value)]:
-                        return True
-        elif self.conf['filter_save_enable'] == 'false':
-            return True
-        
-        return False
 
     def handle_usb(self, ts, pkt, flags, orig_len):
         pkthex = " ".join("%02x" % x for x in pkt)
         #eject command
         eject_command = bytes.fromhex('0003433330')
-        if eject_command in pkt:
-            self.output.
-        if self.data_filter(pkt):
+        if data_filter(self.conf, pkt):
             try:
                 self.output.write(bytes(self.template % (pkthex, self.speed.upper(), ts / 60e6), "ascii"))
             except Exception as e:
@@ -312,18 +310,21 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
 
             total = wrap_count * ring_size + wptr
             utilization = delta * 100 / ring_size
-
+            
+            '''
             print("%d / %d (%3.2f %% utilization) %d kB | %d overflow, %08x total | R%08x W%08x" %
                 (delta, ring_size, utilization, total / 1024,
                 dev.regs.OVF_INSERT_NUM_OVF.rd(), dev.regs.OVF_INSERT_NUM_TOTAL.rd(),
                 rptr, wptr
                 ), file = sys.stderr)
+            '''
 
             dev.regs.OVF_INSERT_CTL.wr(0)
-            print("%d overflow, %08x total" % (dev.regs.OVF_INSERT_NUM_OVF.rd(), dev.regs.OVF_INSERT_NUM_TOTAL.rd()), file = sys.stderr)
+            #print("%d overflow, %08x total" % (dev.regs.OVF_INSERT_NUM_OVF.rd(), dev.regs.OVF_INSERT_NUM_TOTAL.rd()), file = sys.stderr)
 
             if False:
                 dev.regs.SDRAM_SINK_DEBUG_CTL.wr(0)
+                '''
                 print("rptr = %08x i_stb=%08x i_ack=%08x d_stb=%08x d_term=%08x s0=%08x s1=%08x s2=%08x | wptr = %08x i_stb=%08x i_ack=%08x d_stb=%08x d_term=%08x s0=%08x s1=%08x s2=%08x wrap=%x" % (
                     dev.regs.SDRAM_HOST_READ_RPTR_STATUS.rd(),
                     dev.regs.SDRAM_HOST_READ_DEBUG_I_STB.rd(),
@@ -343,6 +344,7 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
                     dev.regs.SDRAM_SINK_DEBUG_S2.rd(),
                     dev.regs.SDRAM_SINK_WRAP_COUNT.rd(),
                     ), file = sys.stderr)
+                '''
             if timeout and elapsed_time > timeout:
                 break
             time.sleep(1)
