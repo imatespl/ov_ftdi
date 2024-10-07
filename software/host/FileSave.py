@@ -9,7 +9,6 @@ ZIP_PASSWORD = b"PeD~L^wDB!Jf5hj"
 
 class FileHandler:
     def __init__(self, file_name, max_file_size, rotation_file_interval):
-        self.current_file_index = self.load_sequence()
         self.current_file = None
         self.file_name = file_name or FILE_NAME_TEMPLATE
         self.max_file_size = max_file_size * 1024 * 1024 # MB
@@ -35,7 +34,6 @@ class FileHandler:
     def open_new_file(self):
         self.ensure_directory_exists()
         self.current_file = open(self.file_name, 'wb')
-        self.save_sequence()
         self.open_file_time = datetime.now()
 
     def close_current_file(self):
@@ -57,7 +55,7 @@ class FileHandler:
         self.save_with_time()    
         self.open_new_file()
 
-    def compress_file(self, file_index):
+    def compress_file(self):
         zip_name = f"{self.save_file_name}.zip"
         pyminizip.compress(self.save_file_name, None, zip_name, ZIP_PASSWORD, 0)
         os.remove(self.save_file_name)  # 删除原始文件
