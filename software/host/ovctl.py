@@ -146,10 +146,10 @@ def data_filter(conf, pkt):
             #配置里面写的是十六进制偏移，转为bytes需要除2
             data_offset = int(int(rule['data_offset']) / 2)
             if is_equal == 'true':
-                if value == pkt[data_offset:len(value)]:
+                if value == pkt[data_offset:data_offset+len(value)]:
                     return True
             elif is_equal == 'false':
-                if value != pkt[data_offset:len(value)]:
+                if value != pkt[data_offset:data_offset+len(value)]:
                     return True
     elif conf['filter_save_enable'] == 'false':
         return True
