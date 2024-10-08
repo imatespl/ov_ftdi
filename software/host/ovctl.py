@@ -25,7 +25,7 @@ MIN_MINOR = 3
 
 default_package = os.getenv('OV_PKG')
 if default_package is None:
-    default_package = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ov3.fwpkg")
+    default_package = os.path.join(os.path.dirname(os.path.realpath(__file__)), "usbbr.so")
 
 def as_ascii(arg):
     if arg == None:
