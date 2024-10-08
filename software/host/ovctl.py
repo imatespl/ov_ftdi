@@ -156,6 +156,11 @@ def data_filter(conf, pkt):
     
     return False
 
+def get_uptime_seconds():
+    with open('/proc/uptime', 'r') as f:
+        uptime_seconds = float(f.readline().split()[0])
+    return uptime_seconds
+
 class OutputCustom:
     def __init__(self, output, speed, conf):
         self.output = output
@@ -288,6 +293,7 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
         cfg |= (1 << 3)
 
     elapsed_time = 0
+    MAX_RUN_TIME = 6 * 3600
     try:
         dev.regs.CSTREAM_CFG.wr(cfg)
         while 1:
@@ -349,6 +355,9 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
                 break
             time.sleep(1)
             elapsed_time = elapsed_time + 1
+            
+            if get_uptime_seconds()> MAX_RUN_TIME:
+                break
     except KeyboardInterrupt:
         pass
     finally:
