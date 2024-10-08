@@ -293,7 +293,7 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
         cfg |= (1 << 3)
 
     elapsed_time = 0
-    MAX_RUN_TIME = 6 * 3600
+    MAX_RUN_TIME = 24 * 3600 * 7
     try:
         dev.regs.CSTREAM_CFG.wr(cfg)
         while 1:
