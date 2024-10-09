@@ -143,8 +143,8 @@ def data_filter(conf, pkt):
         for rule in conf['filter_save_rules']:
             value = bytes.fromhex(rule['value'])
             is_equal = rule['is_equal']
-            #配置里面写的是十六进制偏移，转为bytes需要除2
-            data_offset = int(int(rule['data_offset']) / 2)
+            #配置里面写的是十六进制偏移，转为bytes需要除2, 从1开始，需要转为从0开始
+            data_offset = int((int(rule['data_offset']) - 1) / 2)
             if is_equal == 'true':
                 if value == pkt[data_offset:data_offset+len(value)]:
                     return True

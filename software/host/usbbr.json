@@ -3,7 +3,7 @@
         "`filter_save_enable` is the key of enable or disable filter usb data save to txt, ",
         "`yes` is enable, `no` disable will save all data",
         "`filter_save_rules` is active when `filter_save_enable` set to `true`, disable set to `false`" ,
-        "`data_offset` is first filter value position of the usb data, start from 0, only supports even numbers, ignore space",
+        "`data_offset` is first filter value position of the usb data, start from 1, only supports odd numbers, ignore space",
         "`value` is the data hex value, need split with space",
         "`is_equal` is set filter value equal or not equal usb data in `data_offset` position",
 	"`max_file_size` how many data can write to one file, 1024 is 1M, 1 is 1K, min is 1K",
@@ -12,27 +12,27 @@
 	"filter_save_enable": "true",
 	"filter_save_rules": [
 		{
-			"data_offset": 2,
-			"value": "00",
-			"is_equal": "flase"
+			"data_offset": 5,
+			"value": "00 04 43 56 32 30",
+			"is_equal": "true"
 		},
 		{
-			"data_offset": 4,
+			"data_offset": 3,
 			"value": "43 49",
 			"is_equal": "true"
 		},
 		{
-			"data_offset": 4,
+			"data_offset": 3,
 			"value": "50 49",
 			"is_equal": "true"
 		},
 		{
-			"data_offset": 4,
+			"data_offset": 1,
 			"value": "43 56",
 			"is_equal": "true"
 		},
 		{
-			"data_offset": 4,
+			"data_offset": 3,
 			"value": "50 56",
 			"is_equal": "true"
 		}		
