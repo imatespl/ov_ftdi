@@ -3,7 +3,7 @@
         "`filter_save_enable` is the key of enable or disable filter usb data save to txt, ",
         "`yes` is enable, `no` disable will save all data",
         "`filter_save_rules` is active when `filter_save_enable` set to `true`, disable set to `false`" ,
-        "`data_offset` is first filter value position of the usb data, start from 0, only supports even numbers, ignore space",
+        "`data_offset` is first filter value position of the usb data, start from 0, 2 number is 1 byte, offset is byte,, ignore space",
         "`value` is the data hex value, need split with space",
         "`is_equal` is set filter value equal or not equal usb data in `data_offset` position",
 	"`max_file_size` how many data can write to one file, 1024 is 1M, 1 is 1K, min is 1K",
@@ -38,5 +38,5 @@
 		}		
 	],
 	"max_file_size": 1024,
-	"rotation_file_interval": 10
+	"rotation_file_interval": 1
 }

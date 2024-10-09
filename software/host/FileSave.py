@@ -41,6 +41,7 @@ class FileHandler:
         os.fsync(self.current_file.fileno())
         if self.current_file and self.current_file.tell() > 0:
             self.current_file.close()
+            self.save_with_time()
 
     def write(self, data):
         self.current_file.write(data)
@@ -52,7 +53,6 @@ class FileHandler:
     def handle_file_rotation(self):
         # 关闭当前文件并压缩文件（密码保护和无压缩）
         self.close_current_file()
-        self.save_with_time()    
         self.open_new_file()
 
     def compress_file(self):
@@ -62,4 +62,3 @@ class FileHandler:
 
     def close(self):
         self.close_current_file()
-        self.save_with_time()
