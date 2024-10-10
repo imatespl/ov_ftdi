@@ -16,6 +16,7 @@ import struct
 import json
 import FileSave
 import signal
+from datetime import datetime
 #import yappi
 
 # We check the Python version in __main__ so we don't
@@ -274,9 +275,10 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
 
     output_handler = None
     #默认开启按文件大小和时间滚动保存
-    out = FileSave.FileHandler(out, int(conf['max_file_size']), int(conf['rotation_file_interval']))
+    file_out = FileSave.FileHandler(out, int(conf['max_file_size']), int(conf['rotation_file_interval']))
 
-    signal.signal(signal.SIGINT, lambda s, f: signal_handler(s, f, out))
+
+    signal.signal(signal.SIGINT, lambda s, f: signal_handler(s, f, file_out))
 
     if format == "custom":
         output_handler = OutputCustom(out, speed, conf)
@@ -297,6 +299,12 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
     try:
         dev.regs.CSTREAM_CFG.wr(cfg)
         while 1:
+            #检查文件大小和开始写入时间，滚动保存
+            now = datetime.now()
+            interval = (now - file_out.open_file_time).seconds
+            if (file_out.current_file.tell() >= file_out.max_file_size or interval >= file_out.rotation_file_interval):
+                file_out.handle_file_rotation()
+
             dev.regs.SDRAM_SINK_PTR_READ.wr(0)
             dev.regs.OVF_INSERT_CTL.wr(0)
 
