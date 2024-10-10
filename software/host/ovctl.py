@@ -373,7 +373,7 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
         dev.regs.SDRAM_HOST_READ_GO.wr(0)
         dev.regs.CSTREAM_CFG.wr(0)
 
-    if file_out is not None:
+    if not file_out.current_file.closed:
         file_out.close()
 
 class Sniff(Command):
