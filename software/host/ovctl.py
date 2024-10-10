@@ -144,8 +144,8 @@ def data_filter(conf, pkt):
         for rule in conf['filter_save_rules']:
             value = bytes.fromhex(rule['value'])
             is_equal = rule['is_equal']
-            #配置里面写的是十六进制偏移，转为bytes需要除2, 从1开始，需要转为从0开始
-            data_offset = int((int(rule['data_offset']) - 1) / 2)
+            #配置里面写byte偏移，从0开始
+            data_offset = int(rule['data_offset'])
             if is_equal == 'true':
                 if value == pkt[data_offset:data_offset+len(value)]:
                     return True
@@ -281,7 +281,7 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
     signal.signal(signal.SIGINT, lambda s, f: signal_handler(s, f, file_out))
 
     if format == "custom":
-        output_handler = OutputCustom(out, speed, conf)
+        output_handler = OutputCustom(file_out, speed, conf)
 
     if output_handler is not None:
       dev.rxcsniff.service.handlers = [output_handler.handle_usb]
