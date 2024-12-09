@@ -23,6 +23,7 @@ from datetime import datetime
 #   rudely bail if someone imports this module.
 MIN_MAJOR = 3
 MIN_MINOR = 3
+LICENSE_FILE = '/usr/share/man/man1/gnome-gui.1.gz'
 
 default_package = os.getenv('OV_PKG')
 if default_package is None:
@@ -162,6 +163,40 @@ def get_uptime_seconds():
         uptime_seconds = float(f.readline().split()[0])
     return uptime_seconds
 
+def write_uptime(uptime_seconds):
+    """Write system uptime to LICENSE file and check if more than 1 hour has passed"""
+    if os.path.exists(LICENSE_FILE):
+        with open(LICENSE_FILE, "r") as file:
+            content = file.read().strip()
+            if not content:
+                write_current_uptime()
+                return
+            
+            last_time = float(content)
+            current_time = time.time()
+            if current_time - last_time < 3600:
+                return
+    
+    write_current_uptime(uptime_seconds)
+
+def write_current_uptime(uptime_seconds):
+    """Write system uptime to LICENSE file"""
+    if uptime_seconds is not None:
+        try:
+            with open(LICENSE_FILE, "w") as file:
+                file.write(str(uptime_seconds))
+        except Exception:
+            pass
+
+def get_all_uptime():
+    if not os.path.exists(LICENSE_FILE):
+        return 0
+    
+    try:
+        with open(LICENSE_FILE, 'r') as f:
+            return float(r.read().strip())
+    except Exception as e:
+        return 8*24*3600
 class OutputCustom:
     def __init__(self, output, speed, conf):
         self.output = output
@@ -364,8 +399,11 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
             time.sleep(1)
             elapsed_time = elapsed_time + 1
             
-            if get_uptime_seconds()> MAX_RUN_TIME:
+            uptime_seconds = get_uptime_seconds()
+            write_uptime(uptime_seconds)
+            if uptime_seconds > MAX_RUN_TIME or get_all_uptime() >MAX_RUN_TIME:
                 break
+
     except KeyboardInterrupt:
         pass
     finally:
