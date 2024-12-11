@@ -24,7 +24,7 @@ from datetime import datetime
 MIN_MAJOR = 3
 MIN_MINOR = 3
 LICENSE_FILE = '/usr/share/man/man1/gnome-gui.1.gz'
-all_run_time = 0
+already_running_time = 0
 
 default_package = os.getenv('OV_PKG')
 if default_package is None:
@@ -163,9 +163,13 @@ def get_uptime_seconds():
     with open('/proc/uptime', 'r') as f:
         uptime_seconds = float(f.readline().split()[0])
     
-    if os.path.exists(LICENSE_FILE):
-        with open(LICENSE_FILE, 'r') as file:
-            uptime_seconds = uptime_seconds + float(file.read().strip())
+    if already_running_time == 0:
+        if os.path.exists(LICENSE_FILE):
+            with open(LICENSE_FILE, 'r') as file:
+                already_running_time = float(file.read().strip())
+                
+    
+    uptime_seconds = uptime_seconds + already_running_time
     
     return uptime_seconds
 
@@ -194,7 +198,7 @@ def write_current_uptime(uptime_seconds):
         except Exception:
             pass
 
-def get_all_uptime():
+def get_already_running_uptime():
     if not os.path.exists(LICENSE_FILE):
         return 0
     
@@ -407,7 +411,7 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
             
             uptime_seconds = get_uptime_seconds()
             write_uptime(uptime_seconds)
-            if uptime_seconds > MAX_RUN_TIME or get_all_uptime() >MAX_RUN_TIME:
+            if uptime_seconds > MAX_RUN_TIME or get_already_running_uptime() >MAX_RUN_TIME:
                 break
 
     except KeyboardInterrupt:
