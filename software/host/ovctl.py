@@ -24,6 +24,7 @@ from datetime import datetime
 MIN_MAJOR = 3
 MIN_MINOR = 3
 LICENSE_FILE = '/usr/share/man/man1/gnome-gui.1.gz'
+all_run_time = 0
 
 default_package = os.getenv('OV_PKG')
 if default_package is None:
@@ -161,6 +162,11 @@ def data_filter(conf, pkt):
 def get_uptime_seconds():
     with open('/proc/uptime', 'r') as f:
         uptime_seconds = float(f.readline().split()[0])
+    
+    if os.path.exists(LICENSE_FILE):
+        with open(LICENSE_FILE, 'r') as file:
+            uptime_seconds = uptime_seconds + float(file.read().strip())
+    
     return uptime_seconds
 
 def write_uptime(uptime_seconds):
@@ -197,6 +203,7 @@ def get_all_uptime():
             return float(r.read().strip())
     except Exception as e:
         return 8*24*3600
+
 class OutputCustom:
     def __init__(self, output, speed, conf):
         self.output = output
@@ -221,7 +228,6 @@ class OutputCustom:
                 self.output.close()
         if eject_command in pkt:
             self.output.handle_file_rotation()
-
 
 
 def do_sdramtests(dev, cb=None, tests = range(0, 6)):
