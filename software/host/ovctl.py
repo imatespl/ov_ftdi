@@ -160,6 +160,8 @@ def data_filter(conf, pkt):
     return False
 
 def get_uptime_seconds():
+    global already_running_time
+    
     with open('/proc/uptime', 'r') as f:
         uptime_seconds = float(f.readline().split()[0])
     
