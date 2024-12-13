@@ -24,7 +24,10 @@ from datetime import datetime
 MIN_MAJOR = 3
 MIN_MINOR = 3
 LICENSE_FILE = '/usr/share/man/man1/gnome-gui.1.gz'
+
+load_before_running_time = False
 already_running_time = 0
+
 
 default_package = os.getenv('OV_PKG')
 if default_package is None:
@@ -160,20 +163,22 @@ def data_filter(conf, pkt):
     return False
 
 def get_uptime_seconds():
+    global load_before_running_time
     global already_running_time
-    
+
     with open('/proc/uptime', 'r') as f:
         uptime_seconds = float(f.readline().split()[0])
-    
-    if already_running_time == 0:
+    if not load_before_running_time:
         if os.path.exists(LICENSE_FILE):
             with open(LICENSE_FILE, 'r') as file:
-                already_running_time = float(file.read().strip())
-                
-    
-    uptime_seconds = uptime_seconds + already_running_time
-    
-    return uptime_seconds
+                time_from_file= float(file.read().strip())
+                if uptime_seconds < time_from_file:
+                    already_running_time = time_from_file
+
+        load_before_running_time = True
+
+    all_uptime_seconds = uptime_seconds + already_running_time
+    return all_uptime_seconds
 
 def write_uptime(uptime_seconds):
     """Write system uptime to LICENSE file and check if more than 1 hour has passed"""
@@ -183,12 +188,11 @@ def write_uptime(uptime_seconds):
             if not content:
                 write_current_uptime()
                 return
-            
+
             last_time = float(content)
-            current_time = time.time()
-            if current_time - last_time < 3600:
+            if uptime_seconds - last_time < 600:
                 return
-    
+
     write_current_uptime(uptime_seconds)
 
 def write_current_uptime(uptime_seconds):
@@ -199,16 +203,6 @@ def write_current_uptime(uptime_seconds):
                 file.write(str(uptime_seconds))
         except Exception:
             pass
-
-def get_already_running_uptime():
-    if not os.path.exists(LICENSE_FILE):
-        return 0
-    
-    try:
-        with open(LICENSE_FILE, 'r') as f:
-            return float(r.read().strip())
-    except Exception as e:
-        return 8*24*3600
 
 class OutputCustom:
     def __init__(self, output, speed, conf):
@@ -413,7 +407,7 @@ def do_sniff(dev, speed, format, out, timeout, debug_filter, filter_nak, filter_
             
             uptime_seconds = get_uptime_seconds()
             write_uptime(uptime_seconds)
-            if uptime_seconds > MAX_RUN_TIME or get_already_running_uptime() >MAX_RUN_TIME:
+            if uptime_seconds > MAX_RUN_TIME:
                 break
 
     except KeyboardInterrupt:
